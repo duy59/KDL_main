@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEMO HỆ THỐNG OLAP</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>DEMO HỆ THỐNG OLAP</h1>
+            <div class="tabs">
+                <button class="tab-button active" data-tab="sales-report">Báo cáo về Doanh thu</button>
+                <button class="tab-button" data-tab="inventory-report">Báo cáo về Kho hàng</button>
+            </div>
+        </header>
+
+        <main>
+            <div id="sales-report" class="tab-content active">
+                <h2 class="report-title">BÁO CÁO VỀ DOANH THU</h2>
+                
+                <div class="dimension-filters">
+                    <div class="dimension-filter">
+                        <h3>Khách hàng</h3>
+                        <div class="filter-options">
+                            <label>
+                                <input type="radio" name="customer_filter" value="all" checked>
+                                Gộp tất cả khách hàng
+                            </label>
+                            <label>
+                                <input type="radio" name="customer_filter" value="state">
+                                Theo bang
+                            </label>
+                            <label>
+                                <input type="radio" name="customer_filter" value="city">
+                                Theo thành phố
+                            </label>
+                            <label>
+                                <input type="radio" name="customer_filter" value="individual">
+                                Chi tiết từng khách hàng
+                            </label>
+                        </div>
+                        <div id="customer_search_container" class="search-container" style="display: none;">
+                            <input type="text" id="customer_search" placeholder="Tìm kiếm khách hàng...">
+                        </div>
+                    </div>
+
+                    <div class="dimension-filter">
+                        <h3>Thời gian</h3>
+                        <div class="filter-options">
+                            <label>
+                                <input type="radio" name="time_filter" value="all" checked>
+                                Tất cả dữ liệu
+                            </label>
+                            <label>
+                                <input type="radio" name="time_filter" value="year">
+                                Theo năm
+                            </label>
+                            <label>
+                                <input type="radio" name="time_filter" value="quarter">
+                                Theo quý
+                            </label>
+                            <label>
+                                <input type="radio" name="time_filter" value="month">
+                                Theo tháng
+                            </label>
+                        </div>
+                        <div id="time_detail_container" class="detail-container" style="display: none;">
+                            <div id="year_filter_container">
+                                <label for="year_filter">Chọn năm:</label>
+                                <select id="year_filter">
+                                    <option value="all">Tất cả các năm</option>
+                                    <!-- Sẽ được điền bằng JavaScript -->
+                                </select>
+                            </div>
+                            <div id="quarter_filter_container" style="display: none;">
+                                <label for="quarter_filter">Chọn quý:</label>
+                                <select id="quarter_filter">
+                                    <option value="all">Tất cả các quý</option>
+                                    <option value="Q1">Quý 1</option>
+                                    <option value="Q2">Quý 2</option>
+                                    <option value="Q3">Quý 3</option>
+                                    <option value="Q4">Quý 4</option>
+                                </select>
+                            </div>
+                            <div id="month_filter_container" style="display: none;">
+                                <label for="month_filter">Chọn tháng:</label>
+                                <select id="month_filter">
+                                    <option value="all">Tất cả các tháng</option>
+                                    <option value="1">Tháng 1</option>
+                                    <option value="2">Tháng 2</option>
+                                    <option value="3">Tháng 3</option>
+                                    <option value="4">Tháng 4</option>
+                                    <option value="5">Tháng 5</option>
+                                    <option value="6">Tháng 6</option>
+                                    <option value="7">Tháng 7</option>
+                                    <option value="8">Tháng 8</option>
+                                    <option value="9">Tháng 9</option>
+                                    <option value="10">Tháng 10</option>
+                                    <option value="11">Tháng 11</option>
+                                    <option value="12">Tháng 12</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dimension-filter">
+                        <h3>Sản phẩm</h3>
+                        <div class="filter-options">
+                            <label>
+                                <input type="radio" name="item_filter" value="all" checked>
+                                Gộp tất cả sản phẩm
+                            </label>
+                            <label>
+                                <input type="radio" name="item_filter" value="individual">
+                                Chi tiết từng sản phẩm
+                            </label>
+                        </div>
+                        <div id="item_search_container" class="search-container" style="display: none;">
+                            <input type="text" id="item_search" placeholder="Tìm kiếm sản phẩm...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="generate_report" class="primary-button">Tạo báo cáo</button>
+                    <button id="reset_filters" class="secondary-button">Đặt lại bộ lọc</button>
+                </div>
+
+                <!-- <div id="loading-indicator" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>Đang tạo báo cáo...</p>
+                </div> -->
+
+                <div id="report-container" style="display: none;">
+                    <div class="report-section">
+                        <h3>Bảng dữ liệu</h3>
+                        <div id="table-container"></div>
+                    </div>
+                    <!-- <div class="report-section">
+                        <h3>Biểu đồ</h3>
+                        <div id="chart-container">
+                            <div id="chart1-container">
+                                <h4 id="chart1-title">Biểu đồ dữ liệu bán hàng</h4>
+                                <canvas id="sales-chart1"></canvas>
+                            </div>
+                            <div id="chart2-container" style="display: none; margin-top: 30px;">
+                                <h4 id="chart2-title">Biểu đồ dữ liệu bán hàng</h4>
+                                <canvas id="sales-chart2"></canvas>
+                            </div>
+                        </div>
+                    </div> -->
+                </div>
+            </div>
+
+            <div id="inventory-report" class="tab-content">
+                <h2 class="report-title">BÁO CÁO VỀ TỒN KHO</h2>
+                
+                <div class="dimension-filters">
+                    <div class="dimension-filter">
+                        <h3>Thời gian</h3>
+                        <div class="filter-options">
+                            <label>
+                                <input type="radio" name="inventory_time_filter" value="all" checked>
+                                Gộp tất cả thời gian
+                            </label>
+                            <label>
+                                <input type="radio" name="inventory_time_filter" value="year">
+                                Theo năm
+                            </label>
+                            <label>
+                                <input type="radio" name="inventory_time_filter" value="quarter">
+                                Theo quý
+                            </label>
+                            <label>
+                                <input type="radio" name="inventory_time_filter" value="month">
+                                Theo tháng
+                            </label>
+                        </div>
+                        <div id="inventory_year_filter" class="additional-filter" style="display: none;">
+                            <label for="inventory_year_select">Chọn năm:</label>
+                            <select id="inventory_year_select">
+                                <option value="all">Tất cả các năm</option>
+                            </select>
+                        </div>
+                        <div id="inventory_quarter_filter" class="additional-filter" style="display: none;">
+                            <label for="inventory_quarter_select">Chọn quý:</label>
+                            <select id="inventory_quarter_select">
+                                <option value="all">Tất cả các quý</option>
+                                <option value="Q1">Quý 1</option>
+                                <option value="Q2">Quý 2</option>
+                                <option value="Q3">Quý 3</option>
+                                <option value="Q4">Quý 4</option>
+                            </select>
+                        </div>
+                        <div id="inventory_month_filter" class="additional-filter" style="display: none;">
+                            <label for="inventory_month_select">Chọn tháng:</label>
+                            <select id="inventory_month_select">
+                                <option value="all">Tất cả các tháng</option>
+                                <option value="1">Tháng 1</option>
+                                <option value="2">Tháng 2</option>
+                                <option value="3">Tháng 3</option>
+                                <option value="4">Tháng 4</option>
+                                <option value="5">Tháng 5</option>
+                                <option value="6">Tháng 6</option>
+                                <option value="7">Tháng 7</option>
+                                <option value="8">Tháng 8</option>
+                                <option value="9">Tháng 9</option>
+                                <option value="10">Tháng 10</option>
+                                <option value="11">Tháng 11</option>
+                                <option value="12">Tháng 12</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="dimension-filter">
+                        <h3>Sản phẩm</h3>
+                        <div class="filter-options">
+                            <label>
+                                <input type="radio" name="inventory_item_filter" value="all" checked>
+                                Gộp tất cả sản phẩm
+                            </label>
+                            <label>
+                                <input type="radio" name="inventory_item_filter" value="individual">
+                                Chi tiết từng sản phẩm
+                            </label>
+                        </div>
+                        <div id="inventory_item_search_container" class="search-container" style="display: none;">
+                            <input type="text" id="inventory_item_search" placeholder="Tìm kiếm sản phẩm...">
+                        </div>
+                    </div>
+
+                    <div class="dimension-filter">
+                        <h3>Cửa hàng</h3>
+                        <div class="filter-options">
+                            <label>
+                                <input type="radio" name="inventory_store_filter" value="all" checked>
+                                Gộp tất cả cửa hàng
+                            </label>
+                            <label>
+                                <input type="radio" name="inventory_store_filter" value="state">
+                                Theo bang
+                            </label>
+                            <label>
+                                <input type="radio" name="inventory_store_filter" value="city">
+                                Theo thành phố
+                            </label>
+                            <label>
+                                <input type="radio" name="inventory_store_filter" value="individual">
+                                Chi tiết từng cửa hàng
+                            </label>
+                        </div>
+                        <div id="inventory_store_search_container" class="search-container" style="display: none;">
+                            <input type="text" id="inventory_store_search" placeholder="Tìm kiếm cửa hàng...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="generate_inventory_report" class="primary-button">Tạo báo cáo</button>
+                    <button id="reset_inventory_filters" class="secondary-button">Đặt lại bộ lọc</button>
+                </div>
+
+                <div id="inventory_report_result" class="report-result">
+                    <div id="inventory_loading" class="loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Đang tải dữ liệu...</p>
+                    </div>
+                    <div id="inventory_data_container" class="data-container">
+                        <div id="inventory_table_container" class="table-container">
+                            <!-- Bảng dữ liệu sẽ được thêm vào đây -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 - DEMO HỆ THỐNG OLAP</p>
+        </footer>
+    </div>
+
+    <script>
+        // Biến toàn cục để lưu trữ dữ liệu
+        let salesChart = null;
+        let years = [2020, 2021, 2022, 2023, 2024]; // Giả định các năm có sẵn
+
+        // Xử lý chuyển tab
+        $('.tab-button').on('click', function() {
+            const tabId = $(this).data('tab');
+            $('.tab-button').removeClass('active');
+            $(this).addClass('active');
+            $('.tab-content').removeClass('active');
+            $('#' + tabId).addClass('active');
+        });
+
+        // Xử lý hiển thị/ẩn các tùy chọn chi tiết
+        $('input[name="customer_filter"]').on('change', function() {
+            if ($(this).val() === 'individual') {
+                $('#customer_search_container').show();
+            } else {
+                $('#customer_search_container').hide();
+            }
+        });
+
+        $('input[name="item_filter"]').on('change', function() {
+            if ($(this).val() === 'individual') {
+                $('#item_search_container').show();
+            } else {
+                $('#item_search_container').hide();
+            }
+        });
+
+        $('input[name="time_filter"]').on('change', function() {
+            const value = $(this).val();
+            if (value === 'all') {
+                $('#time_detail_container').hide();
+            } else {
+                $('#time_detail_container').show();
+                
+                // Hiển thị các bộ lọc phù hợp
+                if (value === 'year') {
+                    $('#year_filter_container').show();
+                    $('#quarter_filter_container').hide();
+                    $('#month_filter_container').hide();
+                } else if (value === 'quarter') {
+                    $('#year_filter_container').show();
+                    $('#quarter_filter_container').show();
+                    $('#month_filter_container').hide();
+                } else if (value === 'month') {
+                    $('#year_filter_container').show();
+                    $('#month_filter_container').show();
+                    $('#quarter_filter_container').hide();
+                }
+            }
+        });
+
+        // Điền các năm vào dropdown
+        function populateYears() {
+            const yearSelect = $('#year_filter');
+            yearSelect.find('option:not(:first)').remove();
+            
+            years.forEach(year => {
+                yearSelect.append(`<option value="${year}">${year}</option>`);
+            });
+        }
+
+        // Đặt lại tất cả các bộ lọc
+        $('#reset_filters').on('click', function() {
+            $('input[name="customer_filter"][value="all"]').prop('checked', true);
+            $('input[name="time_filter"][value="all"]').prop('checked', true);
+            $('input[name="item_filter"][value="all"]').prop('checked', true);
+            
+            $('#customer_search_container').hide();
+            $('#item_search_container').hide();
+            $('#time_detail_container').hide();
+            
+            $('#customer_search').val('');
+            $('#item_search').val('');
+            $('#year_filter').val('all');
+            $('#quarter_filter').val('all');
+            $('#month_filter').val('all');
+        });
+
+        // Tạo báo cáo
+        $('#generate_report').on('click', function() {
+            // Hiển thị loading indicator
+            $('#loading-indicator').show();
+            
+            // Thu thập các tham số từ bộ lọc
+            const params = {
+                customer_filter: $('input[name="customer_filter"]:checked').val(),
+                time_filter: $('input[name="time_filter"]:checked').val(),
+                item_filter: $('input[name="item_filter"]:checked').val(),
+                year: $('#year_filter').val(),
+                quarter: $('#quarter_filter').val(),
+                month: $('#month_filter').val(),
+                customer_search: $('#customer_search').val(),
+                item_search: $('#item_search').val()
+            };
+            
+            // Gửi request đến server
+            $.ajax({
+                url: '/generate_report',
+                method: 'POST',
+                data: params,
+                success: function(response) {
+                    if (response.success) {
+                        // Hiển thị container báo cáo
+                        $('#report-container').show();
+                        
+                        // Hiển thị bảng dữ liệu
+                        $('#table-container').html(response.table_html);
+                        
+                        // Tạo biểu đồ
+                        createChart(response.chart_data);
+                    } else {
+                        alert('Lỗi: ' + response.error);
+                    }
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Đã xảy ra lỗi khi tạo báo cáo';
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.error) {
+                            errorMessage = response.error;
+                        }
+                    } catch (e) {
+                        // Nếu không thể parse JSON, sử dụng message mặc định
+                    }
+                    alert('Lỗi: ' + errorMessage);
+                },
+                complete: function() {
+                    // Ẩn loading indicator
+                    $('#loading-indicator').hide();
+                }
+            });
+        });
+
+        // Biến toàn cục để lưu trữ các biểu đồ
+        let salesChart1 = null;
+        let salesChart2 = null;
+        
+        // Tạo biểu đồ
+        function createChart(chartData) {
+            // Xóa các biểu đồ cũ nếu có
+            if (salesChart1) {
+                salesChart1.destroy();
+                salesChart1 = null;
+            }
+            
+            if (salesChart2) {
+                salesChart2.destroy();
+                salesChart2 = null;
+            }
+            
+            // Kiểm tra loại biểu đồ cần hiển thị
+            if (chartData.chart_type === "single") {
+                // Hiển thị một biểu đồ
+                $('#chart1-container').show();
+                $('#chart2-container').hide();
+                
+                // Cập nhật tiêu đề
+                $('#chart1-title').text(chartData.chart1.title);
+                
+                // Tạo biểu đồ
+                const ctx1 = document.getElementById('sales-chart1').getContext('2d');
+                salesChart1 = createSingleChart(ctx1, chartData.chart1);
+            } else if (chartData.chart_type === "double") {
+                // Hiển thị hai biểu đồ
+                $('#chart1-container').show();
+                $('#chart2-container').show();
+                
+                // Cập nhật tiêu đề
+                $('#chart1-title').text(chartData.chart1.title);
+                $('#chart2-title').text(chartData.chart2.title);
+                
+                // Tạo biểu đồ 1
+                const ctx1 = document.getElementById('sales-chart1').getContext('2d');
+                salesChart1 = createSingleChart(ctx1, chartData.chart1);
+                
+                // Tạo biểu đồ 2
+                const ctx2 = document.getElementById('sales-chart2').getContext('2d');
+                salesChart2 = createSingleChart(ctx2, chartData.chart2);
+            }
+        }
+        
+        // Hàm tạo một biểu đồ đơn
+        function createSingleChart(ctx, chartData) {
+            // Kiểm tra và hiển thị dữ liệu biểu đồ để debug
+            console.log('Chart Data:', chartData);
+            
+            // Đảm bảo dữ liệu là số
+            const quantity = chartData.quantity.map(val => parseFloat(val) || 0);
+            const totalAmount = chartData.total_amount.map(val => parseFloat(val) || 0);
+            
+            // Tìm giá trị lớn nhất để điều chỉnh tỷ lệ biểu đồ
+            const maxQuantity = Math.max(...quantity, 1);
+            const maxAmount = Math.max(...totalAmount, 1);
+            
+            // Tạo biểu đồ
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Số lượng bán',
+                            data: quantity,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Tổng doanh thu',
+                            data: totalAmount,
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: chartData.title,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.datasetIndex === 0) {
+                                        label += context.parsed.y.toLocaleString() + ' sản phẩm';
+                                    } else {
+                                        label += context.parsed.y.toLocaleString() + ' VND';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Số lượng'
+                            },
+                            beginAtZero: true,
+                            suggestedMax: maxQuantity * 1.1 // Thêm 10% khoảng trống
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Doanh thu (VND)'
+                            },
+                            beginAtZero: true,
+                            suggestedMax: maxAmount * 1.1, // Thêm 10% khoảng trống
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    if (value >= 1000000) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    } else if (value >= 1000) {
+                                        return (value / 1000).toFixed(1) + 'K';
+                                    }
+                                    return value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Khởi tạo trang
+        $(document).ready(function() {
+            populateYears();
+            populateInventoryYears();
+        });
+
+        // Xử lý hiển thị/ẩn các tùy chọn chi tiết cho báo cáo tồn kho
+        $('input[name="inventory_time_filter"]').on('change', function() {
+            // Ẩn tất cả các bộ lọc thời gian trước
+            $('#inventory_year_filter, #inventory_quarter_filter, #inventory_month_filter').hide();
+            
+            // Hiển thị các bộ lọc phù hợp dựa trên lựa chọn
+            const selectedFilter = $(this).val();
+            if (selectedFilter === 'year') {
+                $('#inventory_year_filter').show();
+            } else if (selectedFilter === 'quarter') {
+                $('#inventory_year_filter, #inventory_quarter_filter').show();
+            } else if (selectedFilter === 'month') {
+                $('#inventory_year_filter, #inventory_month_filter').show();
+            }
+        });
+
+        $('input[name="inventory_item_filter"]').on('change', function() {
+            if ($(this).val() === 'individual') {
+                $('#inventory_item_search_container').show();
+            } else {
+                $('#inventory_item_search_container').hide();
+            }
+        });
+
+        $('input[name="inventory_store_filter"]').on('change', function() {
+            if ($(this).val() === 'individual') {
+                $('#inventory_store_search_container').show();
+            } else {
+                $('#inventory_store_search_container').hide();
+            }
+        });
+
+        // Điền các năm vào dropdown cho báo cáo tồn kho
+        function populateInventoryYears() {
+            const yearSelect = $('#inventory_year_select');
+            yearSelect.empty();
+            yearSelect.append('<option value="all">Tất cả các năm</option>');
+            years.forEach(year => {
+                yearSelect.append(`<option value="${year}">${year}</option>`);
+            });
+        }
+
+        // Đặt lại tất cả các bộ lọc cho báo cáo tồn kho
+        $('#reset_inventory_filters').on('click', function() {
+            $('input[name="inventory_time_filter"][value="all"]').prop('checked', true);
+            $('input[name="inventory_item_filter"][value="all"]').prop('checked', true);
+            $('input[name="inventory_store_filter"][value="all"]').prop('checked', true);
+            $('#inventory_year_select').val('all');
+            $('#inventory_quarter_select').val('all');
+            $('#inventory_month_select').val('all');
+            $('#inventory_item_search').val('');
+            $('#inventory_store_search').val('');
+            $('#inventory_year_filter').hide();
+            $('#inventory_quarter_filter').hide();
+            $('#inventory_month_filter').hide();
+            $('#inventory_item_search_container').hide();
+            $('#inventory_store_search_container').hide();
+        });
+
+        // Tạo báo cáo tồn kho
+        $('#generate_inventory_report').on('click', function() {
+            // Hiển thị loading
+            $('#inventory_loading').show();
+            $('#inventory_data_container').hide();
+
+            // Thu thập các tham số
+            const params = {
+                time_filter: $('input[name="inventory_time_filter"]:checked').val(),
+                item_filter: $('input[name="inventory_item_filter"]:checked').val(),
+                store_filter: $('input[name="inventory_store_filter"]:checked').val(),
+                year: $('#inventory_year_select').val(),
+                quarter: $('#inventory_quarter_select').val(),
+                month: $('#inventory_month_select').val(),
+                item_search: $('#inventory_item_search').val(),
+                store_search: $('#inventory_store_search').val(),
+                cube: '3D_Inventory_TimeItemStore'
+            };
+
+            // Gửi request
+            $.ajax({
+                url: '/generate_inventory_report',
+                type: 'POST',
+                data: params,
+                success: function(response) {
+                    if (response.success) {
+                        // Hiển thị dữ liệu
+                        $('#inventory_table_container').html(response.table_html);
+                        $('#inventory_data_container').show();
+                    } else {
+                        // Hiển thị thông báo lỗi
+                        alert('Lỗi: ' + response.error);
+                    }
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Đã xảy ra lỗi khi tạo báo cáo.';
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.error) {
+                            errorMessage = response.error;
+                        }
+                    } catch (e) {
+                        console.error('Không thể phân tích phản hồi lỗi:', e);
+                    }
+                    alert('Lỗi: ' + errorMessage);
+                },
+                complete: function() {
+                    // Ẩn loading
+                    $('#inventory_loading').hide();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
