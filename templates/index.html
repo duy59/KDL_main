@@ -18,7 +18,6 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.7);
             z-index: 1000;
-            display: flex;
             justify-content: center;
             align-items: center;
         }
@@ -44,6 +43,11 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        /* Lớp bổ sung khi muốn hiển thị loading */
+        .loading-overlay.show {
+            display: flex;
         }
     </style>
 </head>
@@ -397,10 +401,21 @@
             $('#month_filter').val('all');
         });
 
+        // Đảm bảo rằng loading overlay luôn ẩn khi trang tải xong
+        $(document).ready(function() {
+            populateYears();
+            populateInventoryYears();
+            // Đảm bảo loading overlay ẩn khi trang vừa tải
+            $('#loading-overlay').removeClass('show');
+        });
+
         // Tạo báo cáo
         $('#generate_report').on('click', function() {
+            // Ẩn báo cáo cũ nếu có
+            $('#report-container').hide();
+            
             // Hiển thị loading overlay
-            $('#loading-overlay').show();
+            $('#loading-overlay').addClass('show');
             
             // Thu thập các tham số từ bộ lọc
             const params = {
@@ -420,16 +435,19 @@
                 method: 'POST',
                 data: params,
                 success: function(response) {
+                    // Ẩn loading overlay trước khi xử lý dữ liệu
+                    $('#loading-overlay').removeClass('show');
+                    
                     if (response.success) {
-                        // Hiển thị container báo cáo
-                        $('#report-container').show();
-                        
                         // Hiển thị bảng dữ liệu
                         $('#table-container').html(response.table_html);
                         
                         // Hiển thị thống kê truy vấn
                         $('#execution-time').text(response.metadata.execution_time);
                         $('#record-count').text(response.metadata.row_count);
+                        
+                        // Hiển thị container báo cáo sau khi đã cập nhật dữ liệu
+                        $('#report-container').show();
                         
                         // Tạo biểu đồ
                         createChart(response.chart_data);
@@ -438,6 +456,9 @@
                     }
                 },
                 error: function(xhr) {
+                    // Ẩn loading overlay trước khi hiển thị lỗi
+                    $('#loading-overlay').removeClass('show');
+                    
                     let errorMessage = 'Đã xảy ra lỗi khi tạo báo cáo';
                     try {
                         const response = JSON.parse(xhr.responseText);
@@ -450,8 +471,10 @@
                     alert('Lỗi: ' + errorMessage);
                 },
                 complete: function() {
-                    // Ẩn loading overlay
-                    $('#loading-overlay').hide();
+                    // Đảm bảo loading overlay luôn bị ẩn khi hoàn thành
+                    setTimeout(function() {
+                        $('#loading-overlay').removeClass('show');
+                    }, 100);
                 }
             });
         });
@@ -686,8 +709,11 @@
 
         // Tạo báo cáo tồn kho
         $('#generate_inventory_report').on('click', function() {
+            // Ẩn báo cáo cũ nếu có
+            $('#inventory-report-container').hide();
+            
             // Hiển thị loading overlay
-            $('#loading-overlay').show();
+            $('#loading-overlay').addClass('show');
 
             // Thu thập các tham số
             const params = {
@@ -708,11 +734,16 @@
                 type: 'POST',
                 data: params,
                 success: function(response) {
+                    // Ẩn loading overlay trước khi xử lý dữ liệu
+                    $('#loading-overlay').removeClass('show');
+                    
                     if (response.success) {
                         // Hiển thị dữ liệu
                         $('#inventory-table-container').html(response.table_html);
                         $('#inventory-execution-time').text(response.metadata.execution_time);
                         $('#inventory-record-count').text(response.metadata.row_count);
+                        
+                        // Hiển thị container báo cáo sau khi đã cập nhật dữ liệu
                         $('#inventory-report-container').show();
                     } else {
                         // Hiển thị thông báo lỗi
@@ -720,6 +751,9 @@
                     }
                 },
                 error: function(xhr) {
+                    // Ẩn loading overlay trước khi hiển thị lỗi
+                    $('#loading-overlay').removeClass('show');
+                    
                     let errorMessage = 'Đã xảy ra lỗi khi tạo báo cáo.';
                     try {
                         const response = JSON.parse(xhr.responseText);
@@ -732,8 +766,10 @@
                     alert('Lỗi: ' + errorMessage);
                 },
                 complete: function() {
-                    // Ẩn loading overlay
-                    $('#loading-overlay').hide();
+                    // Đảm bảo loading overlay luôn bị ẩn khi hoàn thành
+                    setTimeout(function() {
+                        $('#loading-overlay').removeClass('show');
+                    }, 100);
                 }
             });
         });
