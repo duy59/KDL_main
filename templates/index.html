@@ -473,9 +473,9 @@
             // Kiểm tra và hiển thị dữ liệu biểu đồ để debug
             console.log('Chart Data:', chartData);
             
-            // Đảm bảo dữ liệu là số
-            const quantity = chartData.quantity.map(val => parseFloat(val) || 0);
-            const totalAmount = chartData.total_amount.map(val => parseFloat(val) || 0);
+            // Đảm bảo dữ liệu là số nguyên
+            const quantity = chartData.quantity.map(val => parseInt(val) || 0);
+            const totalAmount = chartData.total_amount.map(val => parseInt(val) || 0);
             
             // Tìm giá trị lớn nhất để điều chỉnh tỷ lệ biểu đồ
             const maxQuantity = Math.max(...quantity, 1);
@@ -527,9 +527,9 @@
                                         label += ': ';
                                     }
                                     if (context.datasetIndex === 0) {
-                                        label += context.parsed.y.toLocaleString() + ' sản phẩm';
+                                        label += parseInt(context.parsed.y).toLocaleString() + ' sản phẩm';
                                     } else {
-                                        label += context.parsed.y.toLocaleString() + ' VND';
+                                        label += parseInt(context.parsed.y).toLocaleString() + ' VND';
                                     }
                                     return label;
                                 }

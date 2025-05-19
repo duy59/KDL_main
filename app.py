@@ -62,6 +62,8 @@ def execute_mdx_query(mdx_query):
                 for col in df.columns:
                     if col in ['Fact Sales Count', 'Quantity', 'Total Amount']:
                         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+                        # Chuyển đổi sang kiểu số nguyên
+                        df[col] = df[col].astype(int)
                 
                 return df
 
@@ -296,10 +298,10 @@ def generate_report():
             if df.empty:
                 return jsonify({"error": "Không có dữ liệu phù hợp với các bộ lọc sau khi loại bỏ các hàng không có dữ liệu", "success": False}), 404
             
-            # Làm tròn các giá trị số đến 2 chữ số thập phân
+            # Chuyển đổi các giá trị số sang số nguyên
             for col in numeric_columns:
                 if col in df.columns:
-                    df[col] = df[col].apply(lambda x: round(x, 2) if pd.notnull(x) else x)
+                    df[col] = df[col].apply(lambda x: int(x) if pd.notnull(x) else x)
         
         # Đổi tên các cột sang tiếng Việt
         column_mapping = {}
@@ -330,6 +332,11 @@ def generate_report():
         # Đổi tên các cột
         if column_mapping:
             df = df.rename(columns=column_mapping)
+        
+        # Định dạng các cột số để hiển thị dạng số nguyên thay vì ký hiệu khoa học
+        for col in df.columns:
+            if col in ['Số lượng', 'Tổng doanh thu', 'Doanh thu']:
+                df[col] = df[col].apply(lambda x: '{:,.0f}'.format(x).replace(',', '.') if pd.notnull(x) else x)
         
         # Tạo HTML table
         table_html = df.to_html(classes='data-table', index=False)
@@ -545,8 +552,11 @@ def generate_inventory_report():
             if df.empty:
                 return jsonify({"error": "Không có dữ liệu tồn kho phù hợp với các bộ lọc", "success": False}), 404
             
-            # Làm tròn các giá trị số đến 2 chữ số thập phân
-            df['Số lượng tồn kho'] = df['Số lượng tồn kho'].round(2)
+            # Chuyển đổi các giá trị số sang số nguyên
+            df['Số lượng tồn kho'] = df['Số lượng tồn kho'].astype(int)
+            
+            # Định dạng hiển thị số nguyên thay vì ký hiệu khoa học
+            df['Số lượng tồn kho'] = df['Số lượng tồn kho'].apply(lambda x: '{:,.0f}'.format(x).replace(',', '.') if pd.notnull(x) else x)
         
         # Tạo HTML table
         table_html = df.to_html(classes='data-table', index=False)
