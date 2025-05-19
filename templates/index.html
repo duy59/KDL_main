@@ -136,23 +136,14 @@
                 </div> -->
 
                 <div id="report-container" style="display: none;">
+                    <div class="query-stats" id="query-stats">
+                        <p><strong>Thời gian thực thi:</strong> <span id="execution-time">-</span></p>
+                        <p><strong>Số bản ghi:</strong> <span id="record-count">-</span></p>
+                    </div>
                     <div class="report-section">
                         <h3>Bảng dữ liệu</h3>
                         <div id="table-container"></div>
                     </div>
-                    <!-- <div class="report-section">
-                        <h3>Biểu đồ</h3>
-                        <div id="chart-container">
-                            <div id="chart1-container">
-                                <h4 id="chart1-title">Biểu đồ dữ liệu bán hàng</h4>
-                                <canvas id="sales-chart1"></canvas>
-                            </div>
-                            <div id="chart2-container" style="display: none; margin-top: 30px;">
-                                <h4 id="chart2-title">Biểu đồ dữ liệu bán hàng</h4>
-                                <canvas id="sales-chart2"></canvas>
-                            </div>
-                        </div>
-                    </div> -->
                 </div>
             </div>
 
@@ -264,15 +255,14 @@
                     <button id="reset_inventory_filters" class="secondary-button">Đặt lại bộ lọc</button>
                 </div>
 
-                <div id="inventory_report_result" class="report-result">
-                    <div id="inventory_loading" class="loading" style="display: none;">
-                        <div class="spinner"></div>
-                        <p>Đang tải dữ liệu...</p>
+                <div id="inventory-report-container" style="display: none;">
+                    <div class="query-stats" id="inventory-query-stats">
+                        <p><strong>Thời gian thực thi:</strong> <span id="inventory-execution-time">-</span></p>
+                        <p><strong>Số bản ghi:</strong> <span id="inventory-record-count">-</span></p>
                     </div>
-                    <div id="inventory_data_container" class="data-container">
-                        <div id="inventory_table_container" class="table-container">
-                            <!-- Bảng dữ liệu sẽ được thêm vào đây -->
-                        </div>
+                    <div class="report-section">
+                        <h3>Bảng dữ liệu tồn kho</h3>
+                        <div id="inventory-table-container"></div>
                     </div>
                 </div>
             </div>
@@ -394,6 +384,10 @@
                         
                         // Hiển thị bảng dữ liệu
                         $('#table-container').html(response.table_html);
+                        
+                        // Hiển thị thống kê truy vấn
+                        $('#execution-time').text(response.metadata.execution_time);
+                        $('#record-count').text(response.metadata.row_count);
                         
                         // Tạo biểu đồ
                         createChart(response.chart_data);
@@ -675,8 +669,10 @@
                 success: function(response) {
                     if (response.success) {
                         // Hiển thị dữ liệu
-                        $('#inventory_table_container').html(response.table_html);
-                        $('#inventory_data_container').show();
+                        $('#inventory-table-container').html(response.table_html);
+                        $('#inventory-execution-time').text(response.metadata.execution_time);
+                        $('#inventory-record-count').text(response.metadata.row_count);
+                        $('#inventory-report-container').show();
                     } else {
                         // Hiển thị thông báo lỗi
                         alert('Lỗi: ' + response.error);

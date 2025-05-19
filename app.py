@@ -266,6 +266,10 @@ def execute_mdx():
 def generate_report():
     """Tạo báo cáo dựa trên các tham số từ giao diện người dùng"""
     try:
+        # Bắt đầu tính thời gian
+        import time
+        start_time = time.time()
+        
         # Lấy các tham số từ request
         params = request.form.to_dict()
         
@@ -276,6 +280,9 @@ def generate_report():
         # Thực thi truy vấn
         df = execute_mdx_query(mdx_query)
         
+        # Tính thời gian thực thi
+        query_time = time.time() - start_time
+        
         # Xử lý dữ liệu cho bảng
         # Nếu không có dữ liệu, trả về thông báo lỗi
         if df.empty:
@@ -284,6 +291,7 @@ def generate_report():
         # Loại bỏ các hàng có giá trị NaN trong các cột số lượng/giá trị
         # Xác định các cột chứa giá trị số lượng hoặc giá trị
         numeric_columns = [col for col in df.columns if any(measure in col for measure in ['[Measures].[Quantity]', '[Measures].[Sales Amount]', '[Measures].[Unit Price]'])]
+        
         
         # Loại bỏ cột [Measures].[Fact Sales Count] nếu có
         fact_sales_count_cols = [col for col in df.columns if '[Measures].[Fact Sales Count]' in col]
@@ -338,11 +346,20 @@ def generate_report():
             if col in ['Số lượng', 'Tổng doanh thu', 'Doanh thu']:
                 df[col] = df[col].apply(lambda x: '{:,.0f}'.format(x).replace(',', '.') if pd.notnull(x) else x)
         
-        # Tạo HTML table
+       # Tạo HTML table
         table_html = df.to_html(classes='data-table', index=False)
-        
+
+        # Chuẩn bị metadata để hiển thị
+        metadata = {
+            "row_count": len(df),
+            "column_count": len(df.columns),
+            "execution_time": f"{query_time:.2f} giây",
+            "columns": df.columns.tolist()
+        }
+
         return jsonify({
             "table_html": table_html,
+            "metadata": metadata,
             "success": True
         })
     except Exception as e:
@@ -511,8 +528,14 @@ def generate_inventory_report():
         mdx_query = generate_inventory_mdx_query(params)
         print(f"Generated Inventory MDX Query: {mdx_query}")
         
+        # Bắt đầu đo thời gian thực thi
+        start_time = datetime.now()
+        
         # Thực thi truy vấn
         df = execute_mdx_query(mdx_query)
+        
+        # Tính thời gian thực thi
+        execution_time = (datetime.now() - start_time).total_seconds()
         
         # Xử lý dữ liệu cho bảng
         # Nếu không có dữ liệu, trả về thông báo lỗi
@@ -561,8 +584,17 @@ def generate_inventory_report():
         # Tạo HTML table
         table_html = df.to_html(classes='data-table', index=False)
         
+        # Chuẩn bị metadata để hiển thị
+        metadata = {
+            "row_count": len(df),
+            "column_count": len(df.columns),
+            "execution_time": f"{execution_time:.2f} giây",
+            "columns": df.columns.tolist()
+        }
+        
         return jsonify({
             "table_html": table_html,
+            "metadata": metadata,
             "success": True
         })
     except Exception as e:
