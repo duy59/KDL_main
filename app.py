@@ -368,6 +368,7 @@ def generate_report():
 
 def generate_inventory_mdx_query(params):
     """Tạo truy vấn MDX cho báo cáo tồn kho dựa trên các tham số từ giao diện người dùng"""
+    print("Generating inventory MDX query...")
     # Lấy các tham số
     time_filter = params.get('time_filter', 'all')
     item_filter = params.get('item_filter', 'all')
@@ -438,48 +439,95 @@ def generate_inventory_mdx_query(params):
         pass
     elif time_filter == 'year':
         if year != 'all':
-            # Thêm trực tiếp vào ROWS thay vì WHERE
+            # Thay vì chọn cả năm, chỉ chọn tháng 12 của năm đó cho tồn kho
+            month_filter = f"FILTER([Dim Time].[Time Month].[Time Month].MEMBERS, [Dim Time].[Time Month].CurrentMember.Name = \"12\")"
+            rows.append(month_filter)
+            # Hiển thị cả năm trong kết quả
             rows.append(f"[Dim Time].[Time Year].[Time Year].&[{year}]")
+            print(f"Lọc tồn kho theo tháng 12 năm {year}")
         else:
+            # Nếu không chọn năm cụ thể, hiển thị tháng 12 và năm
+            month_filter = f"FILTER([Dim Time].[Time Month].[Time Month].MEMBERS, [Dim Time].[Time Month].CurrentMember.Name = \"12\")"
+            rows.append(month_filter)
             rows.append("[Dim Time].[Time Year].[Time Year].MEMBERS")
+            print(f"Lọc tồn kho theo tháng 12 của tất cả các năm")
     elif time_filter == 'quarter':
         # Chuyển đổi Q1, Q2, Q3, Q4 thành 1, 2, 3, 4
         quarter_num = quarter.replace('Q', '') if quarter != 'all' else 'all'
         
+        # Xác định tháng cuối cùng của quý
+        last_month_of_quarter = {
+            '1': '3',  # Quý 1: tháng 3
+            '2': '6',  # Quý 2: tháng 6
+            '3': '9',  # Quý 3: tháng 9
+            '4': '12'  # Quý 4: tháng 12
+        }
+        
         if year != 'all' and quarter != 'all':
-            # Sử dụng FILTER thay vì tham chiếu trực tiếp
-            rows.append(f"FILTER([Dim Time].[Time Quarter].[Time Quarter].MEMBERS, [Dim Time].[Time Quarter].CurrentMember.Name = \"{quarter_num}\")")
-            # Thêm điều kiện năm vào WHERE
-            where_conditions.append(f"[Dim Time].[Time Year].&[{year}]")
-            print(f"Lọc theo năm {year} và quý {quarter_num}")
+            # Lấy tháng cuối cùng của quý
+            end_month = last_month_of_quarter.get(quarter_num, '12')
+            month_filter = f"FILTER([Dim Time].[Time Month].[Time Month].MEMBERS, [Dim Time].[Time Month].CurrentMember.Name = \"{end_month}\")"
+            rows.append(month_filter)
+            # Hiển thị cả năm và quý trong kết quả
+            rows.append(f"[Dim Time].[Time Year].[Time Year].&[{year}]")
+            rows.append(f"[Dim Time].[Time Quarter].[Time Quarter].&[{quarter_num}]")
+            print(f"Lọc tồn kho theo tháng {end_month} (cuối quý {quarter_num}) năm {year}")
         elif year != 'all':
-            # Lọc theo năm
+            # Hiển thị các tháng cuối quý trong năm được chọn
+            # Tạo filter condition
+            quarter_month_filter = "FILTER([Dim Time].[Time Month].[Time Month].MEMBERS, "
+            quarter_month_filter += "[Dim Time].[Time Month].CurrentMember.Name = \"3\" OR "
+            quarter_month_filter += "[Dim Time].[Time Month].CurrentMember.Name = \"6\" OR "
+            quarter_month_filter += "[Dim Time].[Time Month].CurrentMember.Name = \"9\" OR "
+            quarter_month_filter += "[Dim Time].[Time Month].CurrentMember.Name = \"12\")"
+            rows.append(quarter_month_filter)
+            # Thêm năm và quý vào kết quả
+            rows.append(f"[Dim Time].[Time Year].[Time Year].&[{year}]")
             rows.append("[Dim Time].[Time Quarter].[Time Quarter].MEMBERS")
-            where_conditions.append(f"[Dim Time].[Time Year].&[{year}]")
-            print(f"Lọc theo năm {year} cho tất cả các quý")
+            print(f"Lọc tồn kho theo tháng cuối quý của năm {year}")
         elif quarter != 'all':
-            # Lọc theo quý
-            rows.append(f"FILTER([Dim Time].[Time Quarter].[Time Quarter].MEMBERS, [Dim Time].[Time Quarter].CurrentMember.Name = \"{quarter_num}\")")
-            print(f"Lọc theo quý {quarter_num} cho tất cả các năm")
+            # Lấy tháng cuối cùng của quý được chọn cho tất cả các năm
+            end_month = last_month_of_quarter.get(quarter_num, '12')
+            month_filter = f"FILTER([Dim Time].[Time Month].[Time Month].MEMBERS, [Dim Time].[Time Month].CurrentMember.Name = \"{end_month}\")"
+            rows.append(month_filter)
+            # Thêm năm và quý vào kết quả
+            rows.append("[Dim Time].[Time Year].[Time Year].MEMBERS")
+            rows.append(f"[Dim Time].[Time Quarter].[Time Quarter].&[{quarter_num}]")
+            print(f"Lọc tồn kho theo tháng {end_month} (cuối quý {quarter_num}) cho tất cả các năm")
         else:
+            # Hiển thị các tháng cuối quý cho tất cả các năm
+            quarter_month_filter = "FILTER([Dim Time].[Time Month].[Time Month].MEMBERS, "
+            quarter_month_filter += "[Dim Time].[Time Month].CurrentMember.Name = \"3\" OR "
+            quarter_month_filter += "[Dim Time].[Time Month].CurrentMember.Name = \"6\" OR "
+            quarter_month_filter += "[Dim Time].[Time Month].CurrentMember.Name = \"9\" OR "
+            quarter_month_filter += "[Dim Time].[Time Month].CurrentMember.Name = \"12\")"
+            rows.append(quarter_month_filter)
+            # Thêm cả năm và quý vào kết quả
+            rows.append("[Dim Time].[Time Year].[Time Year].MEMBERS")
             rows.append("[Dim Time].[Time Quarter].[Time Quarter].MEMBERS")
+            print(f"Lọc tồn kho theo tháng cuối quý của tất cả các năm")
     elif time_filter == 'month':
+        # Giữ nguyên logic hiện tại cho bộ lọc tháng, nhưng hiển thị thêm năm
         if year != 'all' and month != 'all':
-            # Sử dụng FILTER thay vì tham chiếu trực tiếp
             rows.append(f"FILTER([Dim Time].[Time Month].[Time Month].MEMBERS, [Dim Time].[Time Month].CurrentMember.Name = \"{month}\")")
-            where_conditions.append(f"[Dim Time].[Time Year].&[{year}]")
+            # Thêm năm vào kết quả
+            rows.append(f"[Dim Time].[Time Year].[Time Year].&[{year}]")
             print(f"Lọc theo năm {year} và tháng {month}")
         elif year != 'all':
-            # Lọc theo năm
             rows.append("[Dim Time].[Time Month].[Time Month].MEMBERS")
-            where_conditions.append(f"[Dim Time].[Time Year].&[{year}]")
+            # Thêm năm vào kết quả
+            rows.append(f"[Dim Time].[Time Year].[Time Year].&[{year}]")
             print(f"Lọc theo năm {year} cho tất cả các tháng")
         elif month != 'all':
-            # Lọc theo tháng
             rows.append(f"FILTER([Dim Time].[Time Month].[Time Month].MEMBERS, [Dim Time].[Time Month].CurrentMember.Name = \"{month}\")")
+            # Thêm năm vào kết quả
+            rows.append("[Dim Time].[Time Year].[Time Year].MEMBERS")
             print(f"Lọc theo tháng {month} cho tất cả các năm")
         else:
             rows.append("[Dim Time].[Time Month].[Time Month].MEMBERS")
+            # Thêm năm vào kết quả
+            rows.append("[Dim Time].[Time Year].[Time Year].MEMBERS")
+            print(f"Lọc theo tất cả các tháng và năm")
     
     # Nếu không có bộ lọc nào được chọn cho ROWS, sử dụng mặc định
     if not rows:
@@ -520,6 +568,7 @@ def generate_inventory_mdx_query(params):
 @app.route('/generate_inventory_report', methods=['POST'])
 def generate_inventory_report():
     """Tạo báo cáo tồn kho dựa trên các tham số từ giao diện người dùng"""
+    print("Generating inventory report...")
     try:
         # Lấy các tham số từ request
         params = request.form.to_dict()

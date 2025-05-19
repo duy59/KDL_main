@@ -7,8 +7,55 @@
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* CSS cho màn hình loading */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
+    <!-- Thêm màn hình loading -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Đang tải dữ liệu, vui lòng đợi...</p>
+        </div>
+    </div>
+
     <div class="container">
         <header>
             <h1>DEMO HỆ THỐNG OLAP</h1>
@@ -129,11 +176,6 @@
                     <button id="generate_report" class="primary-button">Tạo báo cáo</button>
                     <button id="reset_filters" class="secondary-button">Đặt lại bộ lọc</button>
                 </div>
-
-                <!-- <div id="loading-indicator" style="display:none;">
-                    <div class="spinner"></div>
-                    <p>Đang tạo báo cáo...</p>
-                </div> -->
 
                 <div id="report-container" style="display: none;">
                     <div class="query-stats" id="query-stats">
@@ -357,8 +399,8 @@
 
         // Tạo báo cáo
         $('#generate_report').on('click', function() {
-            // Hiển thị loading indicator
-            $('#loading-indicator').show();
+            // Hiển thị loading overlay
+            $('#loading-overlay').show();
             
             // Thu thập các tham số từ bộ lọc
             const params = {
@@ -408,8 +450,8 @@
                     alert('Lỗi: ' + errorMessage);
                 },
                 complete: function() {
-                    // Ẩn loading indicator
-                    $('#loading-indicator').hide();
+                    // Ẩn loading overlay
+                    $('#loading-overlay').hide();
                 }
             });
         });
@@ -644,9 +686,8 @@
 
         // Tạo báo cáo tồn kho
         $('#generate_inventory_report').on('click', function() {
-            // Hiển thị loading
-            $('#inventory_loading').show();
-            $('#inventory_data_container').hide();
+            // Hiển thị loading overlay
+            $('#loading-overlay').show();
 
             // Thu thập các tham số
             const params = {
@@ -691,8 +732,8 @@
                     alert('Lỗi: ' + errorMessage);
                 },
                 complete: function() {
-                    // Ẩn loading
-                    $('#inventory_loading').hide();
+                    // Ẩn loading overlay
+                    $('#loading-overlay').hide();
                 }
             });
         });
